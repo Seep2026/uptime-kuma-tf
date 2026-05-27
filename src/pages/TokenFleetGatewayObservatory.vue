@@ -32,7 +32,56 @@
 
         <Transition name="tab-fade" mode="out-in">
             <section :key="activeTab.value" class="tab-stage">
-                <template v-if="activeTab.value === 'overview'">
+                <template v-if="activeTab.value === 'ecosystem'">
+                    <section class="ecosystem-stage" aria-label="算力生态 Logo 墙">
+                        <div class="ecosystem-noise" aria-hidden="true">
+                            <span v-for="item in ecosystemGlyphs" :key="item.text" :style="item.style">
+                                {{ item.text }}
+                            </span>
+                        </div>
+
+                        <svg class="ecosystem-lines" viewBox="0 0 1000 560" preserveAspectRatio="none" aria-hidden="true">
+                            <line
+                                v-for="provider in ecosystemProviders"
+                                :key="'line-' + provider.name"
+                                x1="500"
+                                y1="280"
+                                :x2="provider.lineX"
+                                :y2="provider.lineY"
+                            />
+                        </svg>
+
+                        <div class="ecosystem-core">
+                            <span class="section-kicker">API Compute Gateway</span>
+                            <strong>TokenFleet</strong>
+                            <small>多路算力接入 · 可信计量 · Agent调度</small>
+                        </div>
+
+                        <div class="ecosystem-logo-cloud">
+                            <span
+                                v-for="provider in ecosystemProviders"
+                                :key="provider.name"
+                                class="ecosystem-provider"
+                                :class="'ecosystem-' + provider.group"
+                                :style="provider.style"
+                            >
+                                {{ provider.name }}
+                            </span>
+                        </div>
+
+                        <div class="ecosystem-footer">
+                            <span>Routing</span>
+                            <i></i>
+                            <span>Metering</span>
+                            <i></i>
+                            <span>Agent Scheduling</span>
+                            <i></i>
+                            <span>High Availability</span>
+                        </div>
+                    </section>
+                </template>
+
+                <template v-else-if="activeTab.value === 'overview'">
                     <div class="overview-layout">
                         <section class="metrics-grid" aria-label="网关总览指标">
                             <article
@@ -686,7 +735,7 @@ import { timeline } from "../assets/tokenfleet-gateway-timeline";
 import tokenfleetLogo from "../assets/tokenfleet-logo.png";
 
 const FRAME_INTERVAL = 10000;
-const TAB_INTERVAL = 3000;
+const DEFAULT_TAB_DURATION = 3000;
 const STATE_REFRESH_INTERVAL = 5000;
 
 export default {
@@ -705,12 +754,13 @@ export default {
             chartNow: new Date(),
             gatewayFrame: null,
             tabs: [
-                { label: "总览", value: "overview" },
-                { label: "API状态", value: "providers" },
-                { label: "路由调度", value: "routing" },
-                { label: "Agent调度", value: "agent" },
-                { label: "可信计量", value: "metering" },
-                { label: "异常事件", value: "incidents" },
+                { label: "算力生态", value: "ecosystem", duration: 5000 },
+                { label: "总览", value: "overview", duration: DEFAULT_TAB_DURATION },
+                { label: "API状态", value: "providers", duration: DEFAULT_TAB_DURATION },
+                { label: "路由调度", value: "routing", duration: DEFAULT_TAB_DURATION },
+                { label: "Agent调度", value: "agent", duration: DEFAULT_TAB_DURATION },
+                { label: "可信计量", value: "metering", duration: DEFAULT_TAB_DURATION },
+                { label: "异常事件", value: "incidents", duration: DEFAULT_TAB_DURATION },
             ],
         };
     },
@@ -722,6 +772,9 @@ export default {
             return this.tabs[this.activeTabIndex];
         },
         shortStageHint() {
+            if (this.activeTab.value === "ecosystem") {
+                return "算力生态同步中";
+            }
             const source =
                 this.currentFrame.stageHint || this.currentFrame.headline || this.currentFrame.narrative || "";
             const compactText = Array.from(source.replace(/\s+/g, ""));
@@ -729,6 +782,37 @@ export default {
                 return compactText.join("");
             }
             return `${compactText.slice(0, 17).join("")}...`;
+        },
+        ecosystemProviders() {
+            return [
+                { name: "OpenAI", group: "international", x: 18, y: 17, size: 30, lineX: 238, lineY: 128 },
+                { name: "Claude", group: "international", x: 63, y: 13, size: 28, lineX: 710, lineY: 110 },
+                { name: "Gemini", group: "international", x: 77, y: 42, size: 26, lineX: 838, lineY: 250 },
+                { name: "DeepSeek", group: "china", x: 18, y: 46, size: 29, lineX: 224, lineY: 282 },
+                { name: "Kimi", group: "china", x: 39, y: 75, size: 24, lineX: 420, lineY: 420 },
+                { name: "MiniMax", group: "china", x: 70, y: 72, size: 25, lineX: 732, lineY: 412 },
+                { name: "Zhipu GLM", group: "china", x: 8, y: 72, size: 23, lineX: 150, lineY: 420 },
+                { name: "SeeDance", group: "china", x: 47, y: 14, size: 23, lineX: 505, lineY: 118 },
+                { name: "xAI", group: "international", x: 84, y: 70, size: 24, lineX: 875, lineY: 410 },
+            ].map((provider, index) => ({
+                ...provider,
+                style: {
+                    left: `${provider.x}%`,
+                    top: `${provider.y}%`,
+                    "--provider-size": `${provider.size}px`,
+                    animationDelay: `${index * 240}ms`,
+                },
+            }));
+        },
+        ecosystemGlyphs() {
+            return ["API", "TOKEN", "ROUTE", "MODEL", "COST", "FLOW", "LATENCY", "AGENT", "METER", "SLA", "BILLING", "QUEUE"].map((text, index) => ({
+                text,
+                style: {
+                    left: `${(index * 17 + 8) % 92}%`,
+                    top: `${(index * 23 + 10) % 86}%`,
+                    animationDelay: `${index * 360}ms`,
+                },
+            }));
         },
         summaryCards() {
             const metrics = this.currentFrame.summaryMetrics;
@@ -984,14 +1068,15 @@ export default {
         },
         startTabPlayback() {
             if (this.tabTimer) {
-                clearInterval(this.tabTimer);
+                clearTimeout(this.tabTimer);
             }
             this.tabStartedAt = Date.now();
-            this.tabTimer = setInterval(() => {
+            this.tabTimer = setTimeout(() => {
                 if (this.isPlaying) {
                     this.nextTab();
+                    this.startTabPlayback();
                 }
-            }, TAB_INTERVAL);
+            }, this.activeTab.duration || DEFAULT_TAB_DURATION);
         },
         stopPlayback() {
             if (this.playbackTimer) {
@@ -999,7 +1084,7 @@ export default {
                 this.playbackTimer = null;
             }
             if (this.tabTimer) {
-                clearInterval(this.tabTimer);
+                clearTimeout(this.tabTimer);
                 this.tabTimer = null;
             }
             if (this.manualPauseTimer) {
@@ -1131,7 +1216,7 @@ export default {
                 this.playbackTimer = null;
             }
             if (this.tabTimer) {
-                clearInterval(this.tabTimer);
+                clearTimeout(this.tabTimer);
                 this.tabTimer = null;
             }
             if (this.manualPauseTimer) {
@@ -1557,6 +1642,137 @@ export default {
     flex: 1;
     min-height: 0;
     padding: 16px;
+}
+
+.ecosystem-stage {
+    position: relative;
+    display: grid;
+    min-height: calc(100vh - 112px);
+    overflow: hidden;
+    place-items: center;
+    border: 1px solid rgba(226, 232, 240, 0.84);
+    border-radius: 24px;
+    background:
+        radial-gradient(circle at 50% 48%, rgba(37, 99, 235, 0.12), transparent 27%),
+        radial-gradient(circle at 22% 26%, rgba(124, 58, 237, 0.1), transparent 24%),
+        radial-gradient(circle at 80% 70%, rgba(6, 182, 212, 0.1), transparent 25%),
+        linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+}
+
+.ecosystem-noise,
+.ecosystem-lines,
+.ecosystem-logo-cloud,
+.ecosystem-footer {
+    position: absolute;
+    inset: 0;
+}
+
+.ecosystem-noise {
+    pointer-events: none;
+}
+
+.ecosystem-noise span {
+    position: absolute;
+    color: #2563eb;
+    font-size: 12px;
+    font-weight: 900;
+    opacity: 0.055;
+    animation: glyph-drift 16s ease-in-out infinite;
+}
+
+.ecosystem-lines {
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.ecosystem-lines line {
+    stroke: #2563eb;
+    stroke-linecap: round;
+    stroke-width: 1;
+    opacity: 0.22;
+}
+
+.ecosystem-core {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    min-width: min(460px, 74vw);
+    justify-items: center;
+    padding: 40px 54px;
+    border: 1px solid rgba(37, 99, 235, 0.16);
+    border-radius: 32px;
+    background: rgba(255, 255, 255, 0.88);
+    box-shadow:
+        0 30px 90px rgba(37, 99, 235, 0.13),
+        inset 0 1px 0 rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(16px);
+}
+
+.ecosystem-core strong {
+    background: linear-gradient(90deg, var(--tf-blue), var(--tf-purple) 48%, var(--tf-cyan));
+    background-clip: text;
+    color: transparent;
+    font-size: clamp(48px, 7vw, 92px);
+    font-weight: 900;
+    line-height: 1;
+    text-shadow: 0 18px 48px rgba(37, 99, 235, 0.16);
+    animation: core-breathe 5.8s ease-in-out infinite;
+}
+
+.ecosystem-core small {
+    margin-top: 16px;
+    color: var(--tf-muted);
+    font-size: 14px;
+    font-weight: 800;
+}
+
+.ecosystem-logo-cloud {
+    pointer-events: none;
+}
+
+.ecosystem-provider {
+    position: absolute;
+    z-index: 1;
+    padding: 10px 16px;
+    border: 1px solid rgba(226, 232, 240, 0.78);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.78);
+    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.07);
+    font-size: var(--provider-size);
+    font-weight: 900;
+    line-height: 1;
+    transform: translate(-50%, -50%);
+    animation: logo-float 7s ease-in-out infinite;
+    backdrop-filter: blur(10px);
+}
+
+.ecosystem-international {
+    color: var(--tf-purple);
+}
+
+.ecosystem-china {
+    color: var(--tf-cyan);
+}
+
+.ecosystem-footer {
+    top: auto;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding-bottom: 34px;
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 900;
+}
+
+.ecosystem-footer i {
+    width: 5px;
+    height: 5px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--tf-blue), var(--tf-cyan));
 }
 
 .overview-layout {
@@ -2858,6 +3074,41 @@ h3 {
     }
 }
 
+@keyframes logo-float {
+    0%,
+    100% {
+        transform: translate(-50%, -50%) translateY(0);
+    }
+
+    50% {
+        transform: translate(-50%, -50%) translateY(-9px);
+    }
+}
+
+@keyframes glyph-drift {
+    0%,
+    100% {
+        transform: translateY(0);
+        opacity: 0.045;
+    }
+
+    50% {
+        transform: translateY(-18px);
+        opacity: 0.085;
+    }
+}
+
+@keyframes core-breathe {
+    0%,
+    100% {
+        filter: drop-shadow(0 0 0 rgba(37, 99, 235, 0));
+    }
+
+    50% {
+        filter: drop-shadow(0 0 18px rgba(6, 182, 212, 0.22));
+    }
+}
+
 @media (max-width: 1180px) {
     .metrics-grid {
         grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -2896,6 +3147,15 @@ h3 {
 
     .incident-detail-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .ecosystem-provider {
+        font-size: clamp(17px, 2.2vw, var(--provider-size));
+    }
+
+    .ecosystem-core {
+        min-width: min(420px, 70vw);
+        padding: 34px 40px;
     }
 
     .reconciliation-row {
@@ -2946,6 +3206,16 @@ h3 {
         overflow: auto;
     }
 
+    .ecosystem-stage {
+        min-height: 720px;
+    }
+
+    .ecosystem-footer {
+        flex-wrap: wrap;
+        padding: 0 18px 28px;
+        text-align: center;
+    }
+
     .latency-table {
         overflow-x: auto;
     }
@@ -2993,6 +3263,20 @@ h3 {
 
     .value-trend-card {
         grid-template-columns: 1fr;
+    }
+
+    .ecosystem-stage {
+        min-height: 660px;
+    }
+
+    .ecosystem-core {
+        min-width: min(330px, 84vw);
+        padding: 28px 24px;
+    }
+
+    .ecosystem-provider {
+        padding: 8px 11px;
+        font-size: clamp(14px, 4vw, var(--provider-size));
     }
 }
 </style>
